@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iniciar sesión — Perfums Rai</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['system-ui', 'Segoe UI', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+</head>
+<body class="min-h-screen bg-black text-zinc-100 antialiased">
+  <div class="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(255,255,255,0.06),transparent_55%)]"></div>
+  <div class="relative flex min-h-screen flex-col items-center justify-center px-4 py-16">
+    <div class="mb-10 text-center">
+      <p class="text-[10px] font-semibold uppercase tracking-[0.35em] text-zinc-500">Perfums Rai</p>
+      <h1 class="mt-2 text-2xl font-light tracking-tight text-white sm:text-3xl">Acceso administración</h1>
+      <p class="mt-2 max-w-sm text-sm text-zinc-500">Introduce tus credenciales para continuar.</p>
+    </div>
+
+    <div class="w-full max-w-[400px] rounded-xl border border-zinc-800/80 bg-zinc-950/40 p-8 shadow-2xl shadow-black/50 backdrop-blur-sm sm:p-10">
+      <form id="login-form" class="space-y-6" novalidate>
+        <div>
+          <label for="email" class="mb-2 block text-xs font-medium uppercase tracking-wider text-zinc-400">Correo</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            required
+            class="w-full rounded-lg border border-zinc-800 bg-black/60 px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none ring-0 transition focus:border-zinc-600 focus:bg-black/80"
+            placeholder="tu@correo.com"
+          />
+        </div>
+        <div>
+          <label for="password" class="mb-2 block text-xs font-medium uppercase tracking-wider text-zinc-400">Contraseña</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+            class="w-full rounded-lg border border-zinc-800 bg-black/60 px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none transition focus:border-zinc-600 focus:bg-black/80"
+            placeholder="••••••••"
+          />
+        </div>
+
+        <p id="login-error" class="hidden text-center text-sm text-red-400/90" role="alert"></p>
+
+        <button
+          type="submit"
+          id="login-submit"
+          class="flex w-full items-center justify-center rounded-lg bg-white py-3.5 text-xs font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Entrar
+        </button>
+      </form>
+
+      <p class="mt-8 text-center text-xs text-zinc-600">
+        <a href="index.html" class="text-zinc-500 underline-offset-4 transition hover:text-zinc-300 hover:underline">Volver al catálogo</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var SUPABASE_URL = 'https://likcxxgdahtntbtsnpwm.supabase.co';
+      var SUPABASE_KEY = 'sb_publishable_hCxz5iLMjOmTSQPQ0NNmKg_NFKPlB5W';
+
+      var sbGlobal = typeof supabase !== 'undefined' ? supabase : window.supabase;
+      var createClient = sbGlobal && sbGlobal.createClient;
+      if (!createClient) {
+        console.error('Supabase JS no disponible');
+        return;
+      }
+      var client = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      var form = document.getElementById('login-form');
+      var emailInput = document.getElementById('email');
+      var passwordInput = document.getElementById('password');
+      var submitBtn = document.getElementById('login-submit');
+      var errorEl = document.getElementById('login-error');
+
+      function showError(msg) {
+        errorEl.textContent = msg || 'No se pudo iniciar sesión.';
+        errorEl.classList.remove('hidden');
+      }
+
+      function clearError() {
+        errorEl.textContent = '';
+        errorEl.classList.add('hidden');
+      }
+
+      client.auth.getSession().then(function (res) {
+        if (res.data && res.data.session) {
+          window.location.href = 'admin.html';
+        }
+      });
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        clearError();
+
+        var email = (emailInput.value || '').trim();
+        var password = passwordInput.value || '';
+
+        if (!email || !password) {
+          showError('Completa correo y contraseña.');
+          return;
+        }
+
+        submitBtn.disabled = true;
+        var prevLabel = submitBtn.textContent;
+        submitBtn.textContent = 'Entrando…';
+
+        var result = await client.auth.signInWithPassword({ email: email, password: password });
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = prevLabel;
+
+        if (result.error) {
+          showError(result.error.message || 'Credenciales incorrectas.');
+          return;
+        }
+
+        window.location.href = 'admin.html';
+      });
+    })();
+  </script>
+</body>
+</html>

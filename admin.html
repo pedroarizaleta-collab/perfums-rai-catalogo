@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de control — Perfums Rai</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            panel: '#09090b',
+          },
+        },
+      },
+    };
+  </script>
+</head>
+<body class="min-h-screen bg-zinc-950 text-zinc-100 antialiased">
+  <div class="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_70%_45%_at_50%_-5%,rgba(255,255,255,0.04),transparent_50%)]"></div>
+
+  <div id="auth-gate" class="relative flex min-h-screen items-center justify-center px-4">
+    <p class="text-sm text-zinc-500">Comprobando sesión…</p>
+  </div>
+
+  <div id="admin-app" class="relative hidden min-h-screen">
+    <!-- Cabecera -->
+    <header class="sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-md">
+      <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <div>
+          <p class="text-[10px] font-semibold uppercase tracking-[0.3em] text-zinc-500">Administración</p>
+          <h1 class="mt-1 text-xl font-light tracking-tight text-white sm:text-2xl">Panel de Control - Perfums Rai</h1>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <a
+            href="index.html"
+            class="rounded-lg border border-zinc-700/80 bg-zinc-900/50 px-4 py-2.5 text-xs font-medium text-zinc-300 transition hover:border-zinc-600 hover:bg-zinc-800/50 hover:text-white"
+          >
+            Ver catálogo
+          </a>
+          <button
+            type="button"
+            id="btn-logout"
+            class="rounded-lg border border-zinc-800 px-4 py-2.5 text-xs font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+          >
+            Cerrar sesión
+          </button>
+          <button
+            type="button"
+            id="btn-add-perfume"
+            class="rounded-lg bg-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-zinc-950 shadow-lg shadow-black/30 transition hover:bg-zinc-200"
+          >
+            + Agregar Perfume
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <p id="table-status" class="mb-4 text-sm text-zinc-500" aria-live="polite"></p>
+
+      <div class="overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/20 shadow-xl shadow-black/40">
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[720px] text-left text-sm">
+            <thead>
+              <tr class="border-b border-zinc-800/80 bg-black/40 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                <th class="px-4 py-4 pl-5">Imagen</th>
+                <th class="px-4 py-4">Nombre</th>
+                <th class="px-4 py-4">Marca</th>
+                <th class="px-4 py-4">Precio</th>
+                <th class="px-4 py-4 pr-5 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="perfumes-tbody" class="divide-y divide-zinc-800/60 text-zinc-300"></tbody>
+          </table>
+        </div>
+        <p id="empty-state" class="hidden px-6 py-16 text-center text-sm text-zinc-500">No hay perfumes. Añade el primero con el botón superior.</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal formulario -->
+  <div id="modal-root" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 sm:p-6" aria-hidden="true">
+    <div id="modal-backdrop" class="absolute inset-0 bg-black/75 backdrop-blur-sm"></div>
+    <div
+      id="modal-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      class="relative z-10 flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-zinc-800/90 bg-zinc-950 shadow-2xl shadow-black/60"
+    >
+      <div class="flex items-start justify-between border-b border-zinc-800/80 px-6 py-5">
+        <div>
+          <p class="text-[10px] font-semibold uppercase tracking-[0.25em] text-zinc-500">Perfums Rai</p>
+          <h2 id="modal-title" class="mt-1 text-lg font-medium text-white">Nuevo perfume</h2>
+        </div>
+        <button
+          type="button"
+          id="modal-close"
+          class="rounded-lg border border-zinc-800 p-2 text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+          aria-label="Cerrar"
+        >
+          <span class="text-lg leading-none">×</span>
+        </button>
+      </div>
+
+      <form id="perfume-form" class="flex-1 overflow-y-auto px-6 py-6">
+        <input type="hidden" id="field-id" name="id" value="" />
+
+        <div class="space-y-5">
+          <div>
+            <label for="field-nombre" class="mb-1.5 block text-xs font-medium text-zinc-400">Nombre</label>
+            <input
+              id="field-nombre"
+              name="nombre"
+              type="text"
+              required
+              class="w-full rounded-lg border border-zinc-800 bg-black/50 px-3 py-2.5 text-sm text-white outline-none ring-amber-500/0 transition focus:border-zinc-600 focus:ring-2 focus:ring-amber-500/20"
+              placeholder="Ej. Sauvage Elixir"
+            />
+          </div>
+
+          <div>
+            <label for="field-marca" class="mb-1.5 block text-xs font-medium text-zinc-400">Marca</label>
+            <select
+              id="field-marca"
+              name="marca"
+              required
+              class="w-full rounded-lg border border-zinc-800 bg-black/50 px-3 py-2.5 text-sm text-white outline-none transition focus:border-zinc-600"
+            >
+              <option value="">Seleccionar…</option>
+              <option value="Dior">Dior</option>
+              <option value="Chanel">Chanel</option>
+              <option value="Yves Saint Laurent">Yves Saint Laurent</option>
+              <option value="Tom Ford">Tom Ford</option>
+              <option value="Carolina Herrera">Carolina Herrera</option>
+              <option value="Creed">Creed</option>
+              <option value="Maison Francis Kurkdjian">Maison Francis Kurkdjian</option>
+              <option value="Armani">Armani</option>
+              <option value="Versace">Versace</option>
+              <option value="Paco Rabanne">Paco Rabanne</option>
+              <option value="Otra">Otra (especificar abajo)</option>
+            </select>
+            <input
+              id="field-marca-otra"
+              type="text"
+              class="mt-2 hidden w-full rounded-lg border border-zinc-800 bg-black/50 px-3 py-2.5 text-sm text-white outline-none transition focus:border-zinc-600"
+              placeholder="Nombre de la marca"
+            />
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="field-categoria" class="mb-1.5 block text-xs font-medium text-zinc-400">Categoría</label>
+              <select
+                id="field-categoria"
+                name="categoria"
+                required
+                class="w-full rounded-lg border border-zinc-800 bg-black/50 px-3 py-2.5 text-sm text-white outline-none transition focus:border-zinc-600"
+              >
+                <option value="">Seleccionar…</option>
+                <option value="Diseñador">Diseñador</option>
+                <option value="Árabe">Árabe</option>
+                <option value="Nicho">Nicho</option>
+              </select>
+            </div>
+            <div>
+              <label for="field-genero" class="mb-1.5 block text-xs font-medium text-zinc-400">Género</label>
+              <select
+                id="field-genero"
+                name="genero"
+                required
+                class="w-full rounded-lg border border-zinc-800 bg-black/50 px-3 py-2.5 text-sm text-white outline-none transition focus:border-zinc-600"
+              >
+                <option value="">Seleccionar…</option>
+                <option value="Hombre">Hombre</option>
+                <option value="Mujer">Mujer</option>
+                <option value="Unisex">Unisex</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label for="field-concentracion" class="mb-1.5 block text-xs font-medium text-zinc-400">Concentración</label>
+            <select
+              id="field-concentracion"
+              name="concentracion"
+              required
+              class="w-full rounded-lg border border-zinc-800 bg-black/50 px-3 py-2.5 text-sm text-white outline-none transition focus:border-zinc-600"
+            >
+              <option value="">Seleccionar…</option>
+              <option value="EDP">EDP</option>
+              <option value="EDT">EDT</option>
+              <option value="Parfum">Parfum</option>
+            </select>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="field-precio" class="mb-1.5 block text-xs font-medium text-zinc-400">Precio base</label>
+              <input
+                id="field-precio"
+                name="precio_base"
+                type="number"
+                step="0.01"
+                min="0"
+                required
+                class="w-full rounded-lg border border-zinc-800 bg-black/50 px-3 py-2.5 text-sm text-white outline-none transition focus:border-zinc-600"
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <label for="field-descuento" class="mb-1.5 block text-xs font-medium text-zinc-400">Descuento</label>
+              <input
+                id="field-descuento"
+                name="descuento"
+                type="number"
+                step="0.01"
+                min="0"
+                class="w-full rounded-lg border border-zinc-800 bg-black/50 px-3 py-2.5 text-sm text-white outline-none transition focus:border-zinc-600"
+                placeholder="Opcional"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label for="field-descripcion" class="mb-1.5 block text-xs font-medium text-zinc-400">Descripción corta</label>
+            <textarea
+              id="field-descripcion"
+              name="descripcion_corta"
+              rows="3"
+              class="w-full resize-y rounded-lg border border-zinc-800 bg-black/50 px-3 py-2.5 text-sm text-white outline-none transition focus:border-zinc-600"
+              placeholder="Texto breve para ficha y catálogo…"
+            ></textarea>
+          </div>
+
+          <div>
+            <label for="field-notas" class="mb-1.5 block text-xs font-medium text-zinc-400">Notas olfativas</label>
+            <textarea
+              id="field-notas"
+              name="notas_olfativas"
+              rows="3"
+              class="w-full resize-y rounded-lg border border-zinc-800 bg-black/50 px-3 py-2.5 text-sm text-white outline-none transition focus:border-zinc-600"
+              placeholder="Salida, corazón, fondo…"
+            ></textarea>
+          </div>
+
+          <div class="flex flex-wrap gap-6 border-t border-zinc-800/60 pt-5">
+            <label class="flex cursor-pointer items-center gap-2.5 text-sm text-zinc-300">
+              <input id="field-novedad" name="novedad" type="checkbox" class="h-4 w-4 rounded border-zinc-600 bg-black text-amber-500 focus:ring-amber-500/30" />
+              Novedad
+            </label>
+            <label class="flex cursor-pointer items-center gap-2.5 text-sm text-zinc-300">
+              <input id="field-mas-vendido" name="mas_vendido" type="checkbox" class="h-4 w-4 rounded border-zinc-600 bg-black text-amber-500 focus:ring-amber-500/30" />
+              Más vendido
+            </label>
+          </div>
+
+          <div>
+            <label for="field-imagen" class="mb-1.5 block text-xs font-medium text-zinc-400">Imagen del perfume</label>
+            <input
+              id="field-imagen"
+              name="imagen"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              class="w-full cursor-pointer rounded-lg border border-dashed border-zinc-700 bg-black/30 px-3 py-3 text-xs text-zinc-400 file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-zinc-800 file:px-3 file:py-1.5 file:text-xs file:text-zinc-200 hover:border-zinc-600"
+            />
+            <p id="imagen-actual" class="mt-2 hidden text-xs text-zinc-500"></p>
+            <input type="hidden" id="field-imagen-url-existente" value="" />
+          </div>
+
+          <p id="form-error" class="hidden text-sm text-red-400/90" role="alert"></p>
+
+          <div class="flex gap-3 pt-2">
+            <button
+              type="button"
+              id="form-cancel"
+              class="flex-1 rounded-lg border border-zinc-700 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-500 hover:bg-zinc-900/50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              id="form-submit"
+              class="flex-1 rounded-lg bg-white py-3 text-xs font-semibold uppercase tracking-wider text-zinc-950 transition hover:bg-zinc-200 disabled:opacity-50"
+            >
+              Guardar
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var SUPABASE_URL = 'https://likcxxgdahtntbtsnpwm.supabase.co';
+      var SUPABASE_KEY = 'sb_publishable_hCxz5iLMjOmTSQPQ0NNmKg_NFKPlB5W';
+      var BUCKET = 'fotos-perfumes';
+
+      var sbGlobal = typeof supabase !== 'undefined' ? supabase : window.supabase;
+      var createClient = sbGlobal && sbGlobal.createClient;
+      if (!createClient) {
+        document.body.innerHTML = '<p class="p-8 text-center text-red-400">No se pudo cargar Supabase.</p>';
+        return;
+      }
+      var client = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      var authGate = document.getElementById('auth-gate');
+      var adminApp = document.getElementById('admin-app');
+      var tbody = document.getElementById('perfumes-tbody');
+      var tableStatus = document.getElementById('table-status');
+      var emptyState = document.getElementById('empty-state');
+
+      var modalRoot = document.getElementById('modal-root');
+      var modalBackdrop = document.getElementById('modal-backdrop');
+      var modalClose = document.getElementById('modal-close');
+      var modalTitle = document.getElementById('modal-title');
+      var perfumeForm = document.getElementById('perfume-form');
+      var formError = document.getElementById('form-error');
+      var formSubmit = document.getElementById('form-submit');
+      var fieldMarca = document.getElementById('field-marca');
+      var fieldMarcaOtra = document.getElementById('field-marca-otra');
+      var fieldImagen = document.getElementById('field-imagen');
+      var imagenActualEl = document.getElementById('imagen-actual');
+      var fieldImagenUrlExistente = document.getElementById('field-imagen-url-existente');
+      var fieldId = document.getElementById('field-id');
+
+      var editingId = null;
+
+      function formatMoney(n) {
+        if (n == null || n === '') return '—';
+        var x = typeof n === 'number' ? n : parseFloat(n);
+        if (isNaN(x)) return String(n);
+        return new Intl.NumberFormat('es-US', { style: 'currency', currency: 'USD' }).format(x);
+      }
+
+      function escapeHtml(s) {
+        var d = document.createElement('div');
+        d.textContent = s == null ? '' : String(s);
+        return d.innerHTML;
+      }
+
+      function escapeAttr(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;')
+          .replace(/"/g, '&quot;')
+          .replace(/</g, '&lt;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function showAdmin() {
+        authGate.classList.add('hidden');
+        adminApp.classList.remove('hidden');
+      }
+
+      function openModal() {
+        modalRoot.classList.remove('hidden');
+        modalRoot.classList.add('flex');
+        modalRoot.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('overflow-hidden');
+      }
+
+      function closeModal() {
+        modalRoot.classList.add('hidden');
+        modalRoot.classList.remove('flex');
+        modalRoot.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('overflow-hidden');
+        formError.classList.add('hidden');
+        formError.textContent = '';
+      }
+
+      function syncMarcaOtra() {
+        if (fieldMarca.value === 'Otra') {
+          fieldMarcaOtra.classList.remove('hidden');
+        } else {
+          fieldMarcaOtra.classList.add('hidden');
+        }
+      }
+
+      fieldMarca.addEventListener('change', syncMarcaOtra);
+
+      function resetForm() {
+        editingId = null;
+        perfumeForm.reset();
+        fieldId.value = '';
+        fieldImagenUrlExistente.value = '';
+        imagenActualEl.classList.add('hidden');
+        imagenActualEl.textContent = '';
+        fieldMarcaOtra.classList.add('hidden');
+        modalTitle.textContent = 'Nuevo perfume';
+      }
+
+      function getMarcaValue() {
+        if (fieldMarca.value === 'Otra') return (fieldMarcaOtra.value || '').trim();
+        return fieldMarca.value;
+      }
+
+      function openAddModal() {
+        resetForm();
+        modalTitle.textContent = 'Nuevo perfume';
+        openModal();
+        document.getElementById('field-nombre').focus();
+      }
+
+      function openEditModal(row) {
+        editingId = row.id;
+        fieldId.value = row.id;
+        modalTitle.textContent = 'Editar perfume';
+        document.getElementById('field-nombre').value = row.nombre || '';
+        var m = row.marca || '';
+        var opts = Array.prototype.slice.call(fieldMarca.options).map(function (o) {
+          return o.value;
+        });
+        if (opts.indexOf(m) >= 0 && m !== 'Otra') {
+          fieldMarca.value = m;
+          fieldMarcaOtra.classList.add('hidden');
+          fieldMarcaOtra.value = '';
+        } else if (m) {
+          fieldMarca.value = 'Otra';
+          fieldMarcaOtra.classList.remove('hidden');
+          fieldMarcaOtra.value = m;
+        } else {
+          fieldMarca.value = '';
+        }
+        document.getElementById('field-categoria').value = row.categoria || '';
+        document.getElementById('field-genero').value = row.genero || '';
+        document.getElementById('field-concentracion').value = row.concentracion || '';
+        document.getElementById('field-precio').value = row.precio_base != null ? row.precio_base : '';
+        document.getElementById('field-descuento').value = row.descuento != null && row.descuento !== '' ? row.descuento : '';
+        document.getElementById('field-descripcion').value = row.descripcion_corta || '';
+        document.getElementById('field-notas').value = row.notas_olfativas || row.notas || '';
+        document.getElementById('field-novedad').checked = !!row.novedad;
+        document.getElementById('field-mas-vendido').checked = !!row.mas_vendido;
+        fieldImagen.value = '';
+        var url = (row.imagen_url || '').trim();
+        fieldImagenUrlExistente.value = url;
+        if (url) {
+          imagenActualEl.textContent = 'Imagen actual: ' + url;
+          imagenActualEl.classList.remove('hidden');
+        } else {
+          imagenActualEl.classList.add('hidden');
+        }
+        openModal();
+      }
+
+      function renderRows(rows) {
+        tbody.innerHTML = '';
+        if (!rows || rows.length === 0) {
+          emptyState.classList.remove('hidden');
+          return;
+        }
+        emptyState.classList.add('hidden');
+        rows.forEach(function (row) {
+          var tr = document.createElement('tr');
+          tr.className = 'hover:bg-zinc-900/30';
+          var imgUrl = (row.imagen_url || '').trim();
+          var thumb =
+            '<img src="' +
+            escapeAttr(imgUrl || 'assets/212vip.png') +
+            '" alt="" class="h-14 w-14 rounded-lg border border-zinc-800 object-cover" width="56" height="56" loading="lazy" />';
+          tr.innerHTML =
+            '<td class="px-4 py-3 pl-5">' +
+            thumb +
+            '</td>' +
+            '<td class="max-w-[200px] truncate px-4 py-3 font-medium text-white">' +
+            escapeHtml(row.nombre || '') +
+            '</td>' +
+            '<td class="px-4 py-3 text-zinc-400">' +
+            escapeHtml(row.marca || '') +
+            '</td>' +
+            '<td class="px-4 py-3 tabular-nums text-zinc-200">' +
+            escapeHtml(formatMoney(row.precio_base)) +
+            '</td>' +
+            '<td class="px-4 py-3 pr-5 text-right whitespace-nowrap">' +
+            '<button type="button" class="btn-edit mr-2 rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 transition hover:border-amber-500/50 hover:text-white" data-id="' +
+            escapeAttr(row.id) +
+            '">Editar</button>' +
+            '<button type="button" class="btn-delete rounded-lg border border-red-900/50 bg-red-950/20 px-3 py-1.5 text-xs text-red-300 transition hover:bg-red-950/40" data-id="' +
+            escapeAttr(row.id) +
+            '">Eliminar</button>' +
+            '</td>';
+          tr.querySelector('.btn-edit').addEventListener('click', function () {
+            openEditModal(row);
+          });
+          tr.querySelector('.btn-delete').addEventListener('click', function () {
+            deletePerfume(row.id, row.nombre);
+          });
+          tbody.appendChild(tr);
+        });
+      }
+
+      var rowsCache = [];
+
+      async function loadPerfumes() {
+        tableStatus.textContent = 'Cargando lista…';
+        var res = await client.from('perfumes').select('*').order('nombre', { ascending: true });
+        if (res.error) {
+          tableStatus.textContent = 'Error: ' + res.error.message;
+          tableStatus.classList.add('text-red-400');
+          return;
+        }
+        tableStatus.textContent = '';
+        tableStatus.classList.remove('text-red-400');
+        rowsCache = res.data || [];
+        renderRows(rowsCache);
+      }
+
+      function sanitizeFileName(name) {
+        return String(name)
+          .replace(/[^a-zA-Z0-9._-]/g, '_')
+          .slice(0, 120);
+      }
+
+      async function uploadImageFile(file) {
+        var safe = sanitizeFileName(file.name);
+        var path = Date.now() + '-' + Math.random().toString(36).slice(2, 10) + '-' + safe;
+        var upload = await client.storage.from(BUCKET).upload(path, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type || 'image/jpeg',
+        });
+        if (upload.error) throw upload.error;
+        var pub = client.storage.from(BUCKET).getPublicUrl(path);
+        return pub.data.publicUrl;
+      }
+
+      function buildPayload(imagenUrl) {
+        var desc = (document.getElementById('field-descuento').value || '').trim();
+        var descNum = desc === '' ? null : parseFloat(desc);
+        if (descNum !== null && isNaN(descNum)) descNum = null;
+
+        return {
+          nombre: (document.getElementById('field-nombre').value || '').trim(),
+          marca: getMarcaValue(),
+          categoria: (document.getElementById('field-categoria').value || '').trim(),
+          genero: (document.getElementById('field-genero').value || '').trim(),
+          concentracion: (document.getElementById('field-concentracion').value || '').trim(),
+          precio_base: parseFloat(document.getElementById('field-precio').value),
+          descuento: descNum,
+          descripcion_corta: (document.getElementById('field-descripcion').value || '').trim() || null,
+          notas_olfativas: (document.getElementById('field-notas').value || '').trim() || null,
+          novedad: document.getElementById('field-novedad').checked,
+          mas_vendido: document.getElementById('field-mas-vendido').checked,
+          imagen_url: imagenUrl,
+        };
+      }
+
+      perfumeForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        formError.classList.add('hidden');
+        formError.textContent = '';
+
+        var marcaVal = getMarcaValue();
+        if (!marcaVal) {
+          formError.textContent = 'Selecciona o escribe una marca.';
+          formError.classList.remove('hidden');
+          return;
+        }
+
+        var precioRaw = parseFloat(document.getElementById('field-precio').value);
+        if (isNaN(precioRaw) || precioRaw < 0) {
+          formError.textContent = 'Indica un precio base válido.';
+          formError.classList.remove('hidden');
+          return;
+        }
+
+        var file = fieldImagen.files && fieldImagen.files[0];
+        var existingUrl = (fieldImagenUrlExistente.value || '').trim();
+        var imagenUrl = existingUrl;
+
+        formSubmit.disabled = true;
+        var prevText = formSubmit.textContent;
+        formSubmit.textContent = 'Guardando…';
+
+        try {
+          if (file) {
+            imagenUrl = await uploadImageFile(file);
+          }
+
+          if (!imagenUrl) {
+            formError.textContent = 'Sube una imagen o conserva la existente al editar.';
+            formError.classList.remove('hidden');
+            return;
+          }
+
+          var payload = buildPayload(imagenUrl);
+
+          if (editingId) {
+            var up = await client.from('perfumes').update(payload).eq('id', editingId).select();
+            if (up.error) throw up.error;
+          } else {
+            var ins = await client.from('perfumes').insert([payload]).select();
+            if (ins.error) throw ins.error;
+          }
+
+          closeModal();
+          resetForm();
+          await loadPerfumes();
+        } catch (err) {
+          formError.textContent = err.message || String(err);
+          formError.classList.remove('hidden');
+        } finally {
+          formSubmit.disabled = false;
+          formSubmit.textContent = prevText;
+        }
+      });
+
+      async function deletePerfume(id, nombre) {
+        var label = nombre || 'este perfume';
+        if (!confirm('¿Eliminar ' + label + ' de la base de datos? Esta acción no se puede deshacer.')) return;
+        tableStatus.textContent = 'Eliminando…';
+        var del = await client.from('perfumes').delete().eq('id', id);
+        if (del.error) {
+          alert('Error al eliminar: ' + del.error.message);
+          tableStatus.textContent = '';
+          return;
+        }
+        tableStatus.textContent = '';
+        await loadPerfumes();
+      }
+
+      document.getElementById('btn-add-perfume').addEventListener('click', openAddModal);
+      document.getElementById('btn-logout').addEventListener('click', async function () {
+        await client.auth.signOut();
+        window.location.href = 'login.html';
+      });
+      modalClose.addEventListener('click', function () {
+        closeModal();
+        resetForm();
+      });
+      document.getElementById('form-cancel').addEventListener('click', function () {
+        closeModal();
+        resetForm();
+      });
+      modalBackdrop.addEventListener('click', function () {
+        closeModal();
+        resetForm();
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !modalRoot.classList.contains('hidden')) {
+          closeModal();
+          resetForm();
+        }
+      });
+
+      client.auth.getSession().then(async function (res) {
+        if (!res.data || !res.data.session) {
+          window.location.href = 'login.html';
+          return;
+        }
+        showAdmin();
+        await loadPerfumes();
+      });
+    })();
+  </script>
+</body>
+</html>
