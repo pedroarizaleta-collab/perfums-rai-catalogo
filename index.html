@@ -551,19 +551,26 @@
       }
 
       function matchesFilter(item) {
-        var row = item.activeRow;
-        var cat = strTrim(row.categoria).toLowerCase();
-        var conc = strTrim(row.concentracion).toUpperCase();
-        if (activeFilter === 'todos') return true;
-        if (activeFilter === 'arabe') return cat === 'árabe' || cat === 'arabe';
-        if (activeFilter === 'disenador') return cat === 'diseñador' || cat === 'disenador';
-        if (activeFilter === 'edp') return conc === 'EDP';
-        if (activeFilter === 'edt') return conc === 'EDT';
-        if (activeFilter === 'hombre') return conc === 'HOMBRE';
-        if (activeFilter === 'mujer') return conc === 'Mujer';
-        if (activeFilter === 'unisex') return conc === 'Unisex';
-        return true;
-      }
+    var row = item.activeRow;
+    var cat = strTrim(row.categoria).toLowerCase();
+    var conc = strTrim(row.concentracion).toUpperCase();
+    
+    // 1. AGREGAMOS ESTA LÍNEA PARA LEER EL GÉNERO
+    var gen = strTrim(row.genero).toLowerCase(); 
+
+    if (activeFilter === 'todos') return true;
+    if (activeFilter === 'arabe') return cat === 'árabe' || cat === 'arabe';
+    if (activeFilter === 'disenador') return cat === 'diseñador' || cat === 'disenador';
+    if (activeFilter === 'edp') return conc === 'EDP';
+    if (activeFilter === 'edt') return conc === 'EDT';
+    
+    // 2. CAMBIAMOS 'conc' POR 'gen'. (Agregué caballero y dama por si en tu base de datos los escribiste así)
+    if (activeFilter === 'hombre') return gen === 'hombre' || gen === 'caballero';
+    if (activeFilter === 'mujer') return gen === 'mujer' || gen === 'dama';
+    if (activeFilter === 'unisex') return gen === 'unisex';
+    
+    return true;
+}
 
       function marcaSortIndex(marca) {
         var m = strTrim(marca);
