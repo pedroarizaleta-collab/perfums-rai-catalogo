@@ -151,55 +151,44 @@
 
   <!-- Modal detalle perfume -->
   <div
-  id="perfume-modal"
-  class="fixed inset-0 z-[200] hidden overflow-y-auto"
-  aria-hidden="true"
->
-  <div
-    id="perfume-modal-backdrop"
-    class="fixed inset-0 bg-black/80 backdrop-blur-sm"
+    id="perfume-modal"
+    class="fixed inset-0 z-[200] hidden items-center justify-center p-3 sm:p-6"
     aria-hidden="true"
-  ></div>
-
-  <div class="flex min-h-full items-start justify-center p-3 py-10 sm:p-6 md:items-center">
-    
+  >
+    <div
+      id="perfume-modal-backdrop"
+      class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+      aria-hidden="true"
+    ></div>
     <div
       id="perfume-modal-panel"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-perfume-name"
-      class="relative z-10 flex h-auto w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-[#080808] shadow-2xl md:max-h-[88vh] md:flex-row"
+      class="relative z-10 flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-[#080808] shadow-2xl md:max-h-[88vh] md:flex-row"
       tabindex="-1"
     >
       <button
         type="button"
         id="perfume-modal-close"
-        class="absolute right-2 top-2 z-50 flex h-10 w-10 items-center justify-center rounded-sm border border-zinc-800 bg-black/60 text-xl leading-none text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+        class="absolute right-2 top-2 z-20 flex h-10 w-10 items-center justify-center rounded-sm border border-zinc-800 bg-black/60 text-xl leading-none text-zinc-400 transition hover:border-zinc-600 hover:text-white"
         aria-label="Cerrar"
       >
         ×
       </button>
-
-      <div class="relative flex w-full shrink-0 items-center justify-center bg-transparent md:w-[46%] md:max-h-[88vh]">
-        <div 
-          id="modal-image" 
-          class="flex h-[450px] w-full items-center justify-center p-6 md:h-full md:min-h-[500px] [&>img]:h-full [&>img]:w-full [&>img]:object-contain"
-        ></div>
+      <div class="relative w-full shrink-0 bg-zinc-900/25 md:w-[46%] md:max-h-[88vh]">
+        <div id="modal-image" class="h-full min-h-[450px] md:min-h-0 md:max-h-[88vh]"></div>
       </div>
-
-      <div class="flex min-h-0 w-full flex-1 flex-col px-5 pb-6 pt-6 md:overflow-y-auto md:w-[54%] md:px-8 md:pb-8 md:pt-12">
+      <div class="flex min-h-0 w-full flex-1 flex-col overflow-y-auto px-5 pb-6 pt-10 md:w-[54%] md:px-8 md:pb-8 md:pt-12">
         <p id="modal-brand" class="text-xs text-zinc-500"></p>
         <h2 id="modal-perfume-name" class="mt-1 text-2xl font-bold leading-tight text-white sm:text-3xl md:text-4xl"></h2>
         <div id="modal-tags" class="mt-5 flex flex-wrap gap-2"></div>
         <p id="modal-description" class="mt-6 text-sm leading-relaxed text-zinc-400"></p>
-        
         <div class="mt-6 border-t border-zinc-800/80 pt-6">
           <p class="text-[10px] font-semibold uppercase tracking-[0.25em] text-zinc-500">Notas olfativas</p>
           <p id="modal-notes" class="mt-2 text-sm leading-relaxed text-zinc-300"></p>
         </div>
-        
         <p id="modal-price" class="mt-4 text-sm tabular-nums text-zinc-500"></p>
-        
         <a
           id="modal-buy"
           href="#"
@@ -208,10 +197,8 @@
           Comprar / hacer pedido
         </a>
       </div>
-
     </div>
   </div>
-</div>
   
   <footer id="contacto" class="scroll-mt-16 border-t border-zinc-800/80 bg-zinc-950 py-10 text-center text-sm text-zinc-500">
     <p>Contacto: PerfumsRai@gmail.com / https://wa.me/584242074217 .</p>
