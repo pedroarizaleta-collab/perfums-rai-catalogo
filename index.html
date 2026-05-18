@@ -152,7 +152,7 @@
   <!-- Modal detalle perfume -->
   <div
   id="perfume-modal"
-  class="fixed inset-0 z-[200] items-center justify-center hidden overflow-y-auto"
+  class="fixed inset-0 z-[200] hidden overflow-y-auto"
   aria-hidden="true"
 >
   <div
@@ -161,14 +161,15 @@
     aria-hidden="true"
   ></div>
   
-  <div class="flex min-h-full items-center justify-center p-3 py-10 sm:p-6">
+  <div class="flex min-h-full items-start md:items-center justify-center p-3 py-10 sm:p-6">
     
     <div
       id="perfume-modal-panel"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-perfume-name"
-      class="absolute right-2 top-2 z-20 flex h-10 w-10 items-center justify-center rounded-sm border border-zinc-800 bg-black/60 text-xl leading-none text-zinc-400 transition hover:border-zinc-600 hover:text-white"      tabindex="-1"
+      class="relative z-10 flex h-auto w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-[#080808] shadow-2xl md:max-h-[88vh] md:flex-row"
+      tabindex="-1"
     >
       <button
         type="button"
@@ -179,8 +180,8 @@
         ×
       </button>
 
-      <div class="relative w-full shrink-0 bg-zinc-900/25 md:w-[46%] md:max-h-[88vh]">
-        <div id="modal-image" class="h-full min-h-[450px] md:min-h-0 md:max-h-[88vh]"></div>
+      <div class="relative flex w-full shrink-0 items-center justify-center bg-zinc-900/25 md:w-[46%] md:max-h-[88vh]">
+        <div id="modal-image" class="flex h-[350px] w-full items-center justify-center p-6 md:h-full md:min-h-[500px] [&>img]:h-full [&>img]:w-full [&>img]:object-contain"></div>
       </div>
       
       <div class="flex min-h-0 w-full flex-1 flex-col px-5 pb-6 pt-10 md:overflow-y-auto md:w-[54%] md:px-8 md:pb-8 md:pt-12">
