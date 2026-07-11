@@ -250,7 +250,6 @@
       }
       var supabaseClient = createClient ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
-      /** Filas por id (UUID o clave primaria de `perfumes`) para abrir el modal. */
       var perfumeCache = Object.create(null);
 
       var modal = document.getElementById('perfume-modal');
@@ -298,6 +297,23 @@
       var displayItems = [];
       var searchQuery = '';
       var activeFilter = 'todos';
+
+      // --- Variables para el Infinite Scroll ---
+      var currentBrandIndex = 0;
+      var BRANDS_PER_CHUNK = 4; // Carga de 4 en 4 marcas
+      var brandsToRender = [];
+      var filteredByMarca = {};
+
+      var sentinel = document.createElement('div');
+      sentinel.id = 'sentinel';
+      sentinel.style.height = '1px';
+
+      var observer = new IntersectionObserver(function (entries) {
+        if (entries[0].isIntersecting) {
+          renderNextChunk();
+        }
+      }, { rootMargin: '600px' });
+      // -----------------------------------------
 
       function escapeHtml(text) {
         var d = document.createElement('div');
@@ -551,22 +567,22 @@
       }
 
       function matchesFilter(item) {
-    var row = item.activeRow;
-    var cat = strTrim(row.categoria).toLowerCase();
-    var conc = strTrim(row.concentracion).toUpperCase();
-    var gen = strTrim(row.genero).toLowerCase(); 
+        var row = item.activeRow;
+        var cat = strTrim(row.categoria).toLowerCase();
+        var conc = strTrim(row.concentracion).toUpperCase();
+        var gen = strTrim(row.genero).toLowerCase(); 
 
-    if (activeFilter === 'todos') return true;
-    if (activeFilter === 'arabe') return cat === 'árabe' || cat === 'arabe';
-    if (activeFilter === 'disenador') return cat === 'diseñador' || cat === 'disenador';
-    if (activeFilter === 'edp') return conc === 'EDP';
-    if (activeFilter === 'edt') return conc === 'EDT';
-    if (activeFilter === 'hombre') return gen === 'hombre' || gen === 'caballero';
-    if (activeFilter === 'mujer') return gen === 'mujer' || gen === 'dama';
-    if (activeFilter === 'unisex') return gen === 'unisex';
-    
-    return true;
-}
+        if (activeFilter === 'todos') return true;
+        if (activeFilter === 'arabe') return cat === 'árabe' || cat === 'arabe';
+        if (activeFilter === 'disenador') return cat === 'diseñador' || cat === 'disenador';
+        if (activeFilter === 'edp') return conc === 'EDP';
+        if (activeFilter === 'edt') return conc === 'EDT';
+        if (activeFilter === 'hombre') return gen === 'hombre' || gen === 'caballero';
+        if (activeFilter === 'mujer') return gen === 'mujer' || gen === 'dama';
+        if (activeFilter === 'unisex') return gen === 'unisex';
+        
+        return true;
+      }
 
       function marcaSortIndex(marca) {
         var m = strTrim(marca);
@@ -691,6 +707,7 @@
         });
       }
 
+      // --- Modificación de renderCatalog para soportar chunks ---
       function renderCatalog() {
         if (!groupsEl) return;
         var filtered = getFilteredItems();
@@ -705,19 +722,37 @@
           groupsEl.innerHTML = '';
           return;
         }
+
         var byMarca = Object.create(null);
         filtered.forEach(function (item) {
           var m = strTrim(item.marca) || 'Sin marca';
           if (!byMarca[m]) byMarca[m] = [];
           byMarca[m].push(item);
         });
-        var marcas = sortMarcas(Object.keys(byMarca));
+
+        // Guardar estado inicial para el Scroll Infinito
+        brandsToRender = sortMarcas(Object.keys(byMarca));
+        filteredByMarca = byMarca;
+        currentBrandIndex = 0;
+        groupsEl.innerHTML = '';
+
+        // Renderizar el primer bloque
+        renderNextChunk();
+      }
+
+      function renderNextChunk() {
+        if (currentBrandIndex >= brandsToRender.length) return;
+
+        var endIndex = Math.min(currentBrandIndex + BRANDS_PER_CHUNK, brandsToRender.length);
         var html = '';
-        marcas.forEach(function (marca) {
-          var items = byMarca[marca];
+
+        for (var i = currentBrandIndex; i < endIndex; i++) {
+          var marca = brandsToRender[i];
+          var items = filteredByMarca[marca];
           items.sort(function (a, b) {
             return displayNombre(a).localeCompare(displayNombre(b), 'es', { sensitivity: 'base' });
           });
+
           html +=
             '<section class="brand-section">' +
             '<h2 class="mb-6 border-b border-zinc-800/60 pb-3 text-lg font-light tracking-wide text-white sm:text-xl">' +
@@ -726,9 +761,24 @@
             '<div class="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">' +
             items.map(renderPerfumeCard).join('') +
             '</div></section>';
-        });
-        groupsEl.innerHTML = html;
+        }
+
+        // Si el centinela estaba renderizado, quitarlo un momento
+        if (sentinel.parentNode) {
+          sentinel.parentNode.removeChild(sentinel);
+        }
+
+        // Agregar las nuevas marcas al DOM
+        groupsEl.insertAdjacentHTML('beforeend', html);
+        currentBrandIndex = endIndex;
+
+        // Si aún faltan marcas, reinsertar el centinela para observar
+        if (currentBrandIndex < brandsToRender.length) {
+          groupsEl.appendChild(sentinel);
+          observer.observe(sentinel);
+        }
       }
+      // --------------------------------------------------------
 
       function setActiveFilter(filter) {
         activeFilter = filter;
@@ -826,7 +876,6 @@
 
         renderCatalog();
       }
-
 
       function openModalByRowId(rowId) {
         var row = perfumeCache[rowId];
